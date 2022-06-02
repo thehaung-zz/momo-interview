@@ -44,3 +44,5 @@ Explain and BA Case Study Provided, and some stuff
 - This is not fully implementation Dagger2
 - Prefer using IntelliJ IDEA for run this CommandLineMachine.java (have generated source configured)
 - Type command in CommandConstant.java has been declared
+- P/s: If you got a trouble with Error like "java.lang.NoClassDefFoundError /google/common/collect/ImmutableMap" please set guava lib scope to "compile"
+  + IntelliJ: Project Structure -> Module -> Dependencies -> Set scope of "com.google.guava:guava" to compile  
