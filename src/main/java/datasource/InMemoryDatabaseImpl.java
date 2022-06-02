@@ -134,19 +134,18 @@ public class InMemoryDatabaseImpl implements InMemoryDatabase {
 
     @Override
     public void endSession() {
-//        Session session = getCurrentSession();
-//        session.setIsEnded(true);
-//
-//        sessions.set(sessions.size() - 1, session);
-//        boolean isCanRefund = this.refund(currentMoney, true);
-//        if (!isCanRefund) {
-//            System.out.println("Sorry this Machine not enough to refund your payment. Sorry and try again with lower money type!");
-//            return;
-//        }
-//        releaseProduct();
-//        refund(currentMoney, false);
-//        resetAllData();
-        System.out.println("aloooo");
+        Session session = getCurrentSession();
+        session.setIsEnded(true);
+
+        sessions.set(sessions.size() - 1, session);
+        boolean isCanRefund = this.refund(currentMoney, true);
+        if (!isCanRefund) {
+            System.out.println("Sorry this Machine not enough to refund your payment. Sorry and try again with lower money type!");
+            return;
+        }
+        releaseProduct();
+        refund(currentMoney, false);
+        resetAllData();
     }
 
 
@@ -220,38 +219,41 @@ public class InMemoryDatabaseImpl implements InMemoryDatabase {
         return cashMap.get(cashKey).getQuantity();
     }
 
-    private boolean isGotPromotion(Product product) {
-        boolean condition = product.getPrice() <= this.LIMIT_BUDGET_TODAY && this.productKeyConsecutive.get(product.getName()) < product.getQuantity();
-        if (condition) {
-            if (this.productKeyConsecutive.getOrDefault(product.getName(), 0) < 1) {
-                this.productKeyConsecutive.remove(product.getName());
-                return false;
-            }
-            this.productKeyConsecutive.put(product.getName(), this.productKeyConsecutive.get(product.getName()) - 1);
+    private void handlePromotion() {
+        List<Product> products = this.currentOrder.getProducts();
+
+        if (!this.productKeyConsecutive.isEmpty()) {
+            this.productKeyConsecutive.forEach((s, integer) -> {
+               for (int i = 0; i <= integer; i++) {
+                   products.add(productMap.get(s));
+               }
+            });
         }
-        return Util.isLuckyByPercent(this.LUCKY_RATE_PERCENT + this.WIN_RATE_PENDING_PERCENT) && condition;
     }
 
 
     private void releaseProduct() {
-        if (!isEngoughQuantity()) {
+        List<Product> products = this.currentOrder.getProducts();
+
+        // put promotion into orders
+        handlePromotion();
+
+        if (!isEnoughQuantity()) {
             refund(this.clientMoney, false);
             return;
         }
-        List<Product> products = this.currentOrder.getProducts();
 
+        // fully release
         for (Product product : products) {
-            if (isGotPromotion(product) && !this.productKeyConsecutive.isEmpty()) {
-                products.add(product);
-                this.LIMIT_BUDGET_TODAY -= product.getPrice();
+            Product p = productMap.get(product.getName());
 
-                // for tracking
-                this.promotionHistories.add(PromotionHistory.builder().session(getCurrentSession()).build());
-            }
+            p.setQuantity(p.getQuantity() - 1);
+            productMap.put(p.getName(), p);
         }
+        return;
     }
 
-    private boolean isEngoughQuantity() {
+    private boolean isEnoughQuantity() {
         List<Product> products = this.currentOrder.getProducts();
 
         for (Product product : products) {

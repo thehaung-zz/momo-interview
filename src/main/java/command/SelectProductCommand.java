@@ -31,7 +31,7 @@ public class SelectProductCommand implements Command {
             return Status.INVALID;
         }
         System.out.println("SelectProductCommand input: " + input);
-        inMemoryDatabase.endSession();
+        inMemoryDatabase.order(input.get(0));
         return Status.HANDLED;
     }
 }
